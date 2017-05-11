@@ -19,16 +19,30 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 
-#include <Document.hpp>
+#include <Parser.hpp>
+
+#include "downloader.h"
 
 
 TyWidget::TyWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::TyWidgetClass)
+    , manager_(Q_NULLPTR)
+    , current_(0)
+    , file_(Q_NULLPTR)
+    , stream_(Q_NULLPTR)
 {
     ui->setupUi(this);
+
+    manager_ = new QNetworkAccessManager(this);
+
+    QNetworkProxy proxy;
+    proxy.setType(QNetworkProxy::Socks5Proxy);
+    proxy.setHostName(QS("127.0.0.1"));
+    proxy.setPort(1080);
+    manager_->setProxy(proxy);
+
     connect(ui->buttonRun, &QPushButton::clicked, this, &TyWidget::run);
-    QTimer::singleShot(1000, this, &TyWidget::run);
 }
 
 
@@ -40,47 +54,54 @@ TyWidget::~TyWidget()
 
 void TyWidget::run()
 {
-    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(QS("http://tieba.baidu.com/p/5110863154"));
-    auto *reply = manager->get(request);
-    
-    do
-    {
-        QEventLoop loop;
-        QTimer::singleShot(1000, &loop, &QEventLoop::quit);
-        loop.exec(QEventLoop::ExcludeUserInputEvents);
-    } while (!reply->isFinished());
-
-    auto doc = gq::Document::Create();
-
     try
     {
-        std::string s;
-        s.resize(reply->bytesAvailable());
-        reply->read(&s[0], reply->bytesAvailable());
-        reply->deleteLater();
+        // http://xxxxxxx/read.php?tid=1008561&fpage=0&toread=&page=%1 ~248
+        // div.tpc_content
+        gq::Parser parser;
+        auto selector = parser.CreateSelector(ui->editSelector->text().toStdString());
 
-        doc->Parse(s);
-        auto nodes = doc->Find("div.d_post_content");
-        qDebug() << nodes.GetNodeCount();
+        Downloader *d = new Downloader(manager_, this);
+        d->setSelector(selector);
+        connect(d, &Downloader::finished, this, &TyWidget::handleContent);
 
-        for (size_t i = 0; i < nodes.GetNodeCount(); i++)
-        {
-            auto *node = nodes.GetNodeAt(i);
-            
-            QString s = QString::fromStdString(node->GetOwnText()).trimmed();
+        Q_ASSERT(file_ == Q_NULLPTR);
+        file_ = new QFile(ui->editFilename->text(), this);
+        file_->open(QFile::WriteOnly | QFile::Truncate | QFile::Text);
+        stream_ = new QTextStream(file_);
 
-            if (!s.isEmpty())
-            {
-                qDebug() << s;
-            }
-        }
+        current_ = ui->spinFrom->value();
+        d->download(ui->editUrl->text().arg(current_));
     }
-    catch (const std::runtime_error &e)
+    catch (const std::exception &e)
     {
-        qCritical() << "EXCEPTION:" << e.what();
-        return;
+        qCritical() << e.what();
     }
+}
 
-    qDebug() << "Done.";
+
+void TyWidget::handleContent()
+{
+    Downloader *d = qobject_cast<Downloader *>(sender());
+    Q_ASSERT(d);
+
+    *stream_ << d->text() << endl;
+
+    current_++;
+
+    if (current_ <= ui->spinTo->value())
+    {
+        d->download(ui->editUrl->text().arg(current_));
+    }
+    else
+    {
+        delete stream_;
+        delete file_;
+        stream_ = Q_NULLPTR;
+        file_ = Q_NULLPTR;
+
+        d->deleteLater();
+        
+        QMessageBox::information(this, QString(), tr("Done."));
+    }
 }

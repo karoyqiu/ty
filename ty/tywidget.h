@@ -14,10 +14,13 @@
 #pragma once
 #include <QWidget>
 
+class QFile;
+class QNetworkAccessManager;
+class QTextStream;
+
 namespace Ui {
 class TyWidgetClass;
 }
-
 
 class TyWidget : public QWidget
 {
@@ -29,7 +32,12 @@ public:
 
 private slots:
     void run();
+    void handleContent();
 
 private:
     Ui::TyWidgetClass *ui;
+    QNetworkAccessManager *manager_;
+    int current_;
+    QFile *file_;
+    QTextStream *stream_;
 };

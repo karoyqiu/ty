@@ -12,6 +12,7 @@
 *
 **************************************************************************************************/
 #include <QtDebug>
+#include <QtNetwork>
 #include <QtWidgets>
 #include <Document.hpp>
 
