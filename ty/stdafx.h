@@ -11,4 +11,8 @@
 * \license     MIT
 *
 **************************************************************************************************/
+#include <QtDebug>
 #include <QtWidgets>
+#include <Document.hpp>
+
+#define QS(x)   QStringLiteral(x)

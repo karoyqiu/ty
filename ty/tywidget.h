@@ -14,7 +14,9 @@
 #pragma once
 #include <QWidget>
 
-#include "ui_tywidget.h"
+namespace Ui {
+class TyWidgetClass;
+}
 
 
 class TyWidget : public QWidget
@@ -23,7 +25,11 @@ class TyWidget : public QWidget
 
 public:
     explicit TyWidget(QWidget *parent = Q_NULLPTR);
+    virtual ~TyWidget();
+
+private slots:
+    void run();
 
 private:
-    Ui::TyWidgetClass ui;
+    Ui::TyWidgetClass *ui;
 };

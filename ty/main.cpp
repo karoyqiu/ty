@@ -20,6 +20,9 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    QApplication::setApplicationName(QS("ty"));
+    QApplication::setApplicationDisplayName(QS("Ty"));
+    QApplication::setOrganizationName(QS("karoyqiu"));
 
     TyWidget w;
     w.show();
