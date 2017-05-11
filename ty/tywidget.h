@@ -36,6 +36,9 @@ private slots:
     void handleContent();
 
 private:
+    void enableUI(bool enable);
+
+private:
     Ui::TyWidgetClass *ui;
     QNetworkAccessManager *manager_;
     QFile *file_;

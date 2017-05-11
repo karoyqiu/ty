@@ -63,6 +63,8 @@ void TyWidget::run()
 {
     try
     {
+        enableUI(false);
+
         // http://xxxxxxx/read.php?tid=1008561&fpage=0&toread=&page=%1 ~248
         // div.tpc_content
         gq::Parser parser;
@@ -112,6 +114,19 @@ void TyWidget::handleContent()
         d->deleteLater();
         
         ui->progressBar->setValue(ui->progressBar->maximum());
+        enableUI(true);
         QMessageBox::information(this, QString(), tr("Done."));
     }
+}
+
+
+void TyWidget::enableUI(bool enable)
+{
+    ui->editUrl->setEnabled(enable);
+    ui->editFilename->setEnabled(enable);
+    ui->editSelector->setEnabled(enable);
+    ui->spinFrom->setEnabled(enable);
+    ui->spinTo->setEnabled(enable);
+    ui->buttonBrowse->setEnabled(enable);
+    ui->buttonRun->setEnabled(enable);
 }
