@@ -15,10 +15,6 @@
 #include "tywidget.h"
 #include "ui_tywidget.h"
 
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
-
 #include <Parser.hpp>
 
 #include "downloader.h"
@@ -28,7 +24,6 @@ TyWidget::TyWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::TyWidgetClass)
     , manager_(Q_NULLPTR)
-    , current_(0)
     , file_(Q_NULLPTR)
     , stream_(Q_NULLPTR)
 {
@@ -42,6 +37,7 @@ TyWidget::TyWidget(QWidget *parent)
     proxy.setPort(1080);
     manager_->setProxy(proxy);
 
+    connect(ui->buttonBrowse, &QPushButton::clicked, this, &TyWidget::browse);
     connect(ui->buttonRun, &QPushButton::clicked, this, &TyWidget::run);
 }
 
@@ -49,6 +45,17 @@ TyWidget::TyWidget(QWidget *parent)
 TyWidget::~TyWidget()
 {
     delete ui;
+}
+
+
+void TyWidget::browse()
+{
+    auto filename = QFileDialog::getSaveFileName(this, QString(), QString(), tr("Text files (*.txt)"));
+
+    if (!filename.isEmpty())
+    {
+        ui->editFilename->setText(QDir::toNativeSeparators(filename));
+    }
 }
 
 
@@ -70,8 +77,10 @@ void TyWidget::run()
         file_->open(QFile::WriteOnly | QFile::Truncate | QFile::Text);
         stream_ = new QTextStream(file_);
 
-        current_ = ui->spinFrom->value();
-        d->download(ui->editUrl->text().arg(current_));
+        ui->progressBar->setRange(ui->spinFrom->value(), ui->spinTo->value());
+        ui->progressBar->setValue(ui->spinFrom->value());
+        qInfo() << "Downloading page" << ui->progressBar->value();
+        d->download(ui->editUrl->text().arg(ui->progressBar->value()));
     }
     catch (const std::exception &e)
     {
@@ -86,12 +95,12 @@ void TyWidget::handleContent()
     Q_ASSERT(d);
 
     *stream_ << d->text() << endl;
+    ui->progressBar->setValue(ui->progressBar->value() + 1);
 
-    current_++;
-
-    if (current_ <= ui->spinTo->value())
+    if (ui->progressBar->value() < ui->progressBar->maximum())
     {
-        d->download(ui->editUrl->text().arg(current_));
+        qInfo() << "Downloading page" << ui->progressBar->value();
+        d->download(ui->editUrl->text().arg(ui->progressBar->value()));
     }
     else
     {
@@ -102,6 +111,7 @@ void TyWidget::handleContent()
 
         d->deleteLater();
         
+        ui->progressBar->setValue(ui->progressBar->maximum());
         QMessageBox::information(this, QString(), tr("Done."));
     }
 }

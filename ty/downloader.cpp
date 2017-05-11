@@ -61,15 +61,19 @@ void Downloader::handleReply()
         auto *codec = QTextCodec::codecForHtml(all);
         auto html = codec->toUnicode(all).toStdString();
 
+#if 0
+        {
+            QFile file("e:/a.html");
+            file.open(QFile::WriteOnly | QFile::Truncate | QFile::Text);
+            file.write(all);
+        }
+#endif
+
         auto doc = gq::Document::Create();
         doc->Parse(html);
 
-        auto nodes = doc->Find(selector_);
-
-        for (size_t i = 0; i < nodes.GetNodeCount(); i++)
+        doc->Each(selector_, [this](const gq::Node *node)
         {
-            auto *node = nodes.GetNodeAt(i);
-
             QString s = QString::fromStdString(node->GetText()).trimmed();
 
             if (!s.isEmpty())
@@ -77,7 +81,7 @@ void Downloader::handleReply()
                 text_.append(s);
                 text_.append(QS("\n"));
             }
-        }
+        });
     }
     catch (const std::runtime_error &e)
     {

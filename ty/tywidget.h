@@ -31,13 +31,13 @@ public:
     virtual ~TyWidget();
 
 private slots:
+    void browse();
     void run();
     void handleContent();
 
 private:
     Ui::TyWidgetClass *ui;
     QNetworkAccessManager *manager_;
-    int current_;
     QFile *file_;
     QTextStream *stream_;
 };
